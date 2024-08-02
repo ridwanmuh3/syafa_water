@@ -22,7 +22,7 @@
                 <img src="icon.png" alt="" width=150px>
             </div>
             <div class="formLogin">
-                <h2>Sign In</h2>
+                <h2>LOGIN</h2>
                 <form id="loginForm" action="proses_login.php" method="post">
                     <div class="formuser">
                         <label for="username"></i></label>
