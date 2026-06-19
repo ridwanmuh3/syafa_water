@@ -1,0 +1,7 @@
+.runtime
+.agents
+node_modules
+.output
+.tanstack
+dist
+.env
