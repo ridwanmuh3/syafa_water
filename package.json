@@ -2,10 +2,13 @@
   "name": "syafa-water-operations",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
-    "start": "vite preview --host 0.0.0.0 --port ${PORT:-3000}",
+    "start": "node .output/server/index.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
@@ -25,6 +28,7 @@
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "@vitejs/plugin-react": "latest",
+    "nitro": "npm:nitro-nightly@^3.0.1-20260628-090458-3df69609",
     "tailwindcss": "latest",
     "typescript": "latest",
     "vite": "latest",

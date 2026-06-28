@@ -1,7 +1,10 @@
 import tailwindcss from '@tailwindcss/vite'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import viteReact from '@vitejs/plugin-react'
+import { nitro } from 'nitro/vite'
 import { defineConfig } from 'vite'
+
+const deploymentPreset = process.env.VERCEL ? 'vercel' : 'node-server'
 
 export default defineConfig({
   publicDir: false,
@@ -11,5 +14,19 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
   },
-  plugins: [tanstackStart(), tailwindcss(), viteReact()],
+  plugins: [
+    tanstackStart(),
+    nitro({
+      compatibilityDate: '2026-06-28',
+      preset: deploymentPreset,
+      vercel: {
+        entryFormat: 'node',
+        functions: {
+          runtime: 'nodejs22.x',
+        },
+      },
+    }),
+    tailwindcss(),
+    viteReact(),
+  ],
 })

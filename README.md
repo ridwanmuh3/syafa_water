@@ -39,6 +39,27 @@ Required deploy environment:
 SESSION_SECRET=replace-with-at-least-32-characters
 ```
 
+### Vercel
+
+This app is configured for Vercel through Nitro and `vercel.json`.
+
+Project settings:
+
+```text
+Framework Preset: Other
+Install Command: npm ci
+Build Command: npm run build
+Node.js Version: 22.x
+```
+
+Required Vercel environment variable:
+
+```text
+SESSION_SECRET=replace-with-at-least-32-characters
+```
+
+The current demo store is in memory. Data changes are shared across sections during a running server instance, but they reset on a fresh deployment or serverless cold start.
+
 Docker build:
 
 ```bash

@@ -4,5 +4,7 @@ node_modules
 .output
 .tanstack
 dist
+.output
+.vercel
 .env
 .codex
