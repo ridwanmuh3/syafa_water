@@ -1,27 +1,23 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { ModulePanel } from '~/components/module-panel'
-import { PageHeader } from '~/components/page-header'
+import { TransactionFormPage } from '~/features/transactions/transaction-form-page'
+import { getTransactionFormFn } from '~/server/transactions/transactions.functions'
 
 export const Route = createFileRoute('/_app/production/$id/edit')({
+  loader: async ({ params }) =>
+    getTransactionFormFn({
+      data: { type: 'production', id: Number(params.id) },
+    }),
   component: ProductionEditPage,
 })
 
 function ProductionEditPage() {
-  const { id } = Route.useParams()
+  const data = Route.useLoaderData()
 
   return (
-    <>
-      <PageHeader
-        icon="edit"
-        title={`Edit production #${id}`}
-        description="Demo edit shell for production rows."
-      />
-      <ModulePanel
-        icon="factory"
-        title="Production edit"
-        description="Read-only MVP view keeps edit intent visible without persistence."
-        items={['Batch ID', 'Product', 'Cost']}
-      />
-    </>
+    <TransactionFormPage
+      type="production"
+      products={data.products}
+      row={data.row}
+    />
   )
 }

@@ -1,8 +1,10 @@
 import {
   demoDashboardTotals,
+  demoMonthlyTrend,
   demoRecentActivity,
   demoStockAlerts,
 } from '../demo/demo-data.server'
+import type { MonthlyTrendPoint } from '~/lib/transactions'
 
 export type DashboardTotals = {
   revenue: number
@@ -46,4 +48,10 @@ export async function stockAlerts(limit = 5): Promise<Array<StockAlert>> {
 
 export async function recentActivity(limit = 6): Promise<Array<RecentActivity>> {
   return demoRecentActivity(limit)
+}
+
+export async function monthlyTrend(
+  months = 6,
+): Promise<Array<MonthlyTrendPoint>> {
+  return demoMonthlyTrend(months)
 }

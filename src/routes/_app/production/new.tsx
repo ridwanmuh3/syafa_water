@@ -1,25 +1,20 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { ModulePanel } from '~/components/module-panel'
-import { PageHeader } from '~/components/page-header'
+import { TransactionFormPage } from '~/features/transactions/transaction-form-page'
+import { getTransactionFormFn } from '~/server/transactions/transactions.functions'
 
 export const Route = createFileRoute('/_app/production/new')({
+  loader: async () => getTransactionFormFn({ data: { type: 'production' } }),
   component: ProductionNewPage,
 })
 
 function ProductionNewPage() {
+  const data = Route.useLoaderData()
+
   return (
-    <>
-      <PageHeader
-        icon="factory"
-        title="Add production"
-        description="Demo form shell for production entry."
-      />
-      <ModulePanel
-        icon="edit"
-        title="Production form"
-        description="MVP demo keeps production data read-only while showing intended fields."
-        items={['Product', 'Quantity', 'Unit cost']}
-      />
-    </>
+    <TransactionFormPage
+      type="production"
+      products={data.products}
+      row={data.row}
+    />
   )
 }

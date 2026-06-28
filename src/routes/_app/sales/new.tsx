@@ -1,25 +1,16 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { ModulePanel } from '~/components/module-panel'
-import { PageHeader } from '~/components/page-header'
+import { TransactionFormPage } from '~/features/transactions/transaction-form-page'
+import { getTransactionFormFn } from '~/server/transactions/transactions.functions'
 
 export const Route = createFileRoute('/_app/sales/new')({
+  loader: async () => getTransactionFormFn({ data: { type: 'sales' } }),
   component: SalesNewPage,
 })
 
 function SalesNewPage() {
+  const data = Route.useLoaderData()
+
   return (
-    <>
-      <PageHeader
-        icon="cart"
-        title="Add sale"
-        description="Demo form shell for sales entry."
-      />
-      <ModulePanel
-        icon="edit"
-        title="Sales form"
-        description="MVP demo keeps sales data read-only while showing intended fields."
-        items={['Product', 'Quantity', 'Unit price']}
-      />
-    </>
+    <TransactionFormPage type="sales" products={data.products} row={data.row} />
   )
 }

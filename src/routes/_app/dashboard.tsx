@@ -1,187 +1,306 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
 import { PageHeader } from '~/components/page-header'
-import { KpiCard } from '~/components/ui/kpi-card'
-import { StatusBadge } from '~/components/ui/status-badge'
+import { TrendChart } from '~/components/trend-chart'
 import { Icon } from '~/components/ui/icon'
+import { KpiCard } from '~/components/ui/kpi-card'
 import { getDashboardOverviewFn } from '~/server/dashboard/dashboard.functions'
 import { formatDate } from '~/lib/dates'
 import { formatNumber, formatRupiah } from '~/lib/format'
+import {
+  dashboardDateRange,
+  normalizeDashboardSearch,
+  normalizeReportSearch,
+  type DashboardPeriod,
+} from '~/lib/transactions'
 
 export const Route = createFileRoute('/_app/dashboard')({
-  loader: async () => getDashboardOverviewFn(),
+  validateSearch: (search) => normalizeDashboardSearch(search),
+  loaderDeps: ({ search }) => search,
+  loader: async ({ deps }) => getDashboardOverviewFn({ data: deps }),
   component: DashboardPage,
 })
 
 function DashboardPage() {
   const overview = Route.useLoaderData()
+  const filters = Route.useSearch()
+  const [period, setPeriod] = useState<DashboardPeriod>(filters.period)
+  const [from, setFrom] = useState(overview.period.from)
+  const [to, setTo] = useState(overview.period.to)
+
+  useEffect(() => {
+    setPeriod(filters.period)
+    setFrom(overview.period.from)
+    setTo(overview.period.to)
+  }, [filters.period, overview.period.from, overview.period.to])
 
   return (
     <>
       <PageHeader
-        icon="dashboard"
         title="Dashboard"
-        description={`Current month: ${formatDate(overview.period.from)} - ${formatDate(overview.period.to)}`}
+        description={`Ringkasan bisnis untuk ${formatDate(overview.period.from)} - ${formatDate(overview.period.to)}.`}
         action={
-          <Link
-            to="/sales"
-            search={{
-              search: '',
-              from: '',
-              to: '',
-              product: 0,
-              sort: 'date',
-              direction: 'desc',
-              page: 1,
-              perPage: 10,
-            }}
-            className="inline-flex min-h-10 items-center gap-2 rounded-control bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700"
-          >
-            <Icon name="plus" />
-            Add transaction
-          </Link>
+          <>
+            <Link className="button button-secondary" to="/production/new">
+              <Icon name="factory" />
+              Tambah produksi
+            </Link>
+            <Link className="button button-primary" to="/sales/new">
+              <Icon name="plus" />
+              Tambah penjualan
+            </Link>
+          </>
         }
       />
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+
+      <section className="card" style={{ marginBottom: 20 }}>
+        <div className="card-body">
+          <form className="period-form" method="get">
+            <label className="sr-only" htmlFor="period">
+              Periode
+            </label>
+            <select
+              id="period"
+              name="period"
+              value={period}
+              onChange={(event) => {
+                const nextPeriod = event.target.value as DashboardPeriod
+                setPeriod(nextPeriod)
+
+                if (nextPeriod !== 'custom') {
+                  const range = dashboardDateRange(nextPeriod)
+                  setFrom(range.from)
+                  setTo(range.to)
+                }
+              }}
+            >
+              <option value="7d">7 hari terakhir</option>
+              <option value="30d">30 hari terakhir</option>
+              <option value="month">Bulan ini</option>
+              <option value="year">Tahun ini</option>
+              <option value="custom">Tanggal kustom</option>
+            </select>
+            <input
+              name="from"
+              type="date"
+              value={from}
+              onChange={(event) => {
+                setPeriod('custom')
+                setFrom(event.target.value)
+              }}
+            />
+            <input
+              name="to"
+              type="date"
+              value={to}
+              onChange={(event) => {
+                setPeriod('custom')
+                setTo(event.target.value)
+              }}
+            />
+            <button className="button button-primary" type="submit">
+              Terapkan periode
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <section className="kpi-grid">
         <KpiCard
-          icon="wallet"
-          label="Revenue"
-          tone="success"
+          icon="cart"
+          label="Pendapatan"
+          tone="brand"
           value={formatRupiah(overview.totals.revenue)}
+          helper="Sesuai periode aktif"
         />
         <KpiCard
           icon="factory"
-          label="Production cost"
+          label="Biaya produksi"
           tone="warning"
           value={formatRupiah(overview.totals.cost)}
+          helper="Biaya produksi produk"
         />
         <KpiCard
-          icon="trend"
-          label="Gross profit"
-          tone="brand"
+          icon="report"
+          label="Laba kotor"
+          tone="success"
           value={formatRupiah(overview.totals.profit)}
+          helper="Pendapatan dikurangi biaya"
         />
         <KpiCard
           icon="stock"
-          label="Current stock"
+          label="Stok saat ini"
           tone="neutral"
           value={formatNumber(overview.totals.stockUnits)}
-          helper={`${formatNumber(overview.totals.productionUnits)} produced, ${formatNumber(overview.totals.salesUnits)} sold this month`}
+          helper={`${overview.alerts.length} produk memerlukan perhatian`}
         />
       </section>
-      <section className="mt-6 grid gap-6 xl:grid-cols-[1fr_360px]">
-        <div className="rounded-card border border-border bg-surface p-5 shadow-card">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-start gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-control bg-brand-50 text-brand-700">
-                <Icon name="activity" />
-              </span>
+
+      <section className="dashboard-layout">
+        <div className="dashboard-stack dashboard-main">
+          <article className="card">
+            <div className="card-header">
               <div>
-                <h2 className="text-lg font-semibold text-text">Recent activity</h2>
-                <p className="text-sm text-muted">
-                  Latest production and sales rows.
-                </p>
+                <h2>Pendapatan vs biaya</h2>
+                <p>Bulan berjalan</p>
+              </div>
+              <div className="chart-legend">
+                <span>
+                  <i className="legend-dot" />
+                  Pendapatan
+                </span>
+                <span>
+                  <i className="legend-dot cost" />
+                  Biaya
+                </span>
               </div>
             </div>
-            <Link
-              to="/reports"
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700"
-            >
-              Reports
-              <Icon className="h-3.5 w-3.5" name="arrowRight" />
-            </Link>
-          </div>
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[680px] border-collapse text-left text-sm">
-              <thead>
-                <tr className="border-b border-border text-xs uppercase text-muted">
-                  <th className="py-3 pr-4 font-semibold">Date</th>
-                  <th className="py-3 pr-4 font-semibold">Type</th>
-                  <th className="py-3 pr-4 font-semibold">Product</th>
-                  <th className="py-3 pr-4 font-semibold">Qty</th>
-                  <th className="py-3 pr-4 text-right font-semibold">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {overview.activity.map((item) => (
-                  <tr key={`${item.type}-${item.id}`} className="border-b border-border/70">
-                    <td className="py-3 pr-4 text-muted">{formatDate(item.date)}</td>
-                    <td className="py-3 pr-4 font-semibold">
-                      <span className="inline-flex items-center gap-2">
-                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-50 text-brand-700">
-                          <Icon
-                            className="h-3.5 w-3.5"
-                            name={item.type === 'sale' ? 'cart' : 'factory'}
-                          />
-                        </span>
-                        {item.type === 'sale' ? 'Sale' : 'Production'}
-                      </span>
-                    </td>
-                    <td className="py-3 pr-4">{item.productName}</td>
-                    <td className="py-3 pr-4 tabular-nums">
-                      {formatNumber(item.quantity)}
-                    </td>
-                    <td className="py-3 pr-4 text-right font-semibold tabular-nums">
-                      {formatRupiah(item.total)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <aside className="rounded-card border border-border bg-surface p-5 shadow-card">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-start gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-control bg-orange-50 text-warning">
-                <Icon name="alert" />
-              </span>
+            <div className="card-body">
+              <TrendChart points={overview.trend} />
+            </div>
+          </article>
+
+          <article className="card">
+            <div className="card-header">
               <div>
-                <h2 className="text-lg font-semibold text-text">Stock alerts</h2>
-                <p className="text-sm text-muted">Products at or below minimum stock.</p>
+                <h2>Aktivitas terbaru</h2>
+                <p>Produksi dan penjualan terakhir</p>
               </div>
             </div>
-            <Link
-              to="/inventory"
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700"
-            >
-              Inventory
-              <Icon className="h-3.5 w-3.5" name="arrowRight" />
-            </Link>
-          </div>
-          <div className="mt-4 space-y-3">
-            {overview.alerts.length ? (
-              overview.alerts.map((item) => (
-                <div
-                  key={item.id}
-                  className="rounded-control border border-border p-3"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-2">
-                      <span className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-control bg-background text-muted">
-                        <Icon name="package" />
-                      </span>
-                      <div>
-                        <p className="font-semibold text-text">{item.name}</p>
-                        <p className="text-sm text-muted">{item.sku}</p>
-                      </div>
+            <div className="card-body activity-list">
+              {overview.activity.length ? (
+                overview.activity.map((activity) => (
+                  <div
+                    className="activity-item"
+                    key={`${activity.type}-${activity.id}`}
+                  >
+                    <span className="kpi-icon">
+                      <Icon name={activity.type === 'sale' ? 'cart' : 'factory'} />
+                    </span>
+                    <div>
+                      <strong>{activity.productName}</strong>
+                      <small>
+                        {activity.type === 'sale' ? 'Penjualan' : 'Produksi'} ·{' '}
+                        {formatDate(activity.date)} ·{' '}
+                        {formatNumber(activity.quantity)} unit
+                      </small>
                     </div>
-                    <StatusBadge status={item.status} />
+                    <strong>{formatRupiah(activity.total)}</strong>
                   </div>
-                  <p className="mt-3 text-sm text-muted">
-                    {formatNumber(item.available)} {item.unit} available,
-                    minimum {formatNumber(item.minimumStock)}
-                  </p>
+                ))
+              ) : (
+                <div className="empty">
+                  <Icon name="activity" />
+                  <h3>Belum ada aktivitas</h3>
+                  <p>Transaksi baru akan tampil di sini.</p>
                 </div>
-              ))
-            ) : (
-              <div className="flex items-center gap-3 rounded-control border border-border p-3 text-sm text-muted">
-                <Icon name="stock" />
-                <p>No stock alerts.</p>
+              )}
+            </div>
+          </article>
+        </div>
+
+        <aside className="dashboard-stack">
+          <article className="card">
+            <div className="card-header">
+              <div>
+                <h2>Peringatan stok</h2>
+                <p>Produk rendah atau habis</p>
               </div>
-            )}
-          </div>
+              <Link
+                className="button button-ghost button-small"
+                search={{ q: '', status: '' }}
+                to="/inventory"
+              >
+                Lihat semua
+              </Link>
+            </div>
+            <div className="card-body alert-list">
+              {overview.alerts.length ? (
+                overview.alerts.map((item) => (
+                  <div className="alert-item" key={item.id}>
+                    <span className="kpi-icon">
+                      <Icon name="alert" />
+                    </span>
+                    <div>
+                      <strong>{item.name}</strong>
+                      <small>
+                        {formatNumber(item.available)} {item.unit} tersedia ·
+                        minimum {formatNumber(item.minimumStock)}
+                      </small>
+                    </div>
+                    <span className={`badge badge-${item.status}`}>
+                      {item.status === 'out' ? 'Habis' : 'Rendah'}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="empty">
+                  <Icon name="check" />
+                  <h3>Stok terkendali</h3>
+                  <p>Semua produk di atas batas minimum.</p>
+                </div>
+              )}
+            </div>
+          </article>
+
+          <article className="card">
+            <div className="card-header">
+              <div>
+                <h2>Aksi cepat</h2>
+                <p>Pekerjaan umum</p>
+              </div>
+            </div>
+            <div className="card-body quick-actions">
+              <QuickAction
+                to="/production/new"
+                icon="factory"
+                title="Catat produksi"
+                description="Tambah stok produk jadi"
+              />
+              <QuickAction
+                to="/sales/new"
+                icon="cart"
+                title="Catat penjualan"
+                description="Validasi stok otomatis"
+              />
+              <QuickAction
+                to="/reports"
+                search={normalizeReportSearch({})}
+                icon="report"
+                title="Buka laporan"
+                description="Filter, ekspor, dan cetak"
+              />
+            </div>
+          </article>
         </aside>
       </section>
     </>
+  )
+}
+
+function QuickAction({
+  to,
+  search,
+  icon,
+  title,
+  description,
+}: {
+  to: string
+  search?: Record<string, unknown>
+  icon: 'factory' | 'cart' | 'report'
+  title: string
+  description: string
+}) {
+  return (
+    <Link className="quick-action" search={search} to={to}>
+      <span className="kpi-icon">
+        <Icon name={icon} />
+      </span>
+      <div>
+        <strong>{title}</strong>
+        <small>{description}</small>
+      </div>
+      <Icon name="arrowRight" />
+    </Link>
   )
 }

@@ -1,27 +1,17 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { ModulePanel } from '~/components/module-panel'
-import { PageHeader } from '~/components/page-header'
+import { TransactionFormPage } from '~/features/transactions/transaction-form-page'
+import { getTransactionFormFn } from '~/server/transactions/transactions.functions'
 
 export const Route = createFileRoute('/_app/sales/$id/edit')({
+  loader: async ({ params }) =>
+    getTransactionFormFn({ data: { type: 'sales', id: Number(params.id) } }),
   component: SalesEditPage,
 })
 
 function SalesEditPage() {
-  const { id } = Route.useParams()
+  const data = Route.useLoaderData()
 
   return (
-    <>
-      <PageHeader
-        icon="edit"
-        title={`Edit sale #${id}`}
-        description="Demo edit shell for sales rows."
-      />
-      <ModulePanel
-        icon="cart"
-        title="Sales edit"
-        description="Read-only MVP view keeps edit intent visible without persistence."
-        items={['Sale ID', 'Product', 'Revenue']}
-      />
-    </>
+    <TransactionFormPage type="sales" products={data.products} row={data.row} />
   )
 }
