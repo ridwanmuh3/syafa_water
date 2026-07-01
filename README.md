@@ -10,7 +10,7 @@ src/                  TanStack Start application
 
 ## Setup
 
-Requirements: Node.js 22.12+, npm, and Make.
+Requirements: Node.js 24.x, npm, and Make.
 
 ```bash
 cp .env.example .env
@@ -49,7 +49,7 @@ Project settings:
 Framework Preset: Other
 Install Command: npm ci
 Build Command: npm run build
-Node.js Version: 22.x
+Node.js Version: 24.x
 ```
 
 Required Vercel environment variable:
